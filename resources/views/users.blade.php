@@ -29,54 +29,56 @@
 
     <!-- Daftar Users -->
     <div class="space-y-2">
-        <template x-for="user in users" :key="user.id">
-            <div class="border p-4 rounded shadow-sm flex justify-between items-center">
-                <div>
-                    <p><strong x-text="user.name"></strong></p>
-                    <p class="text-sm text-gray-600" x-text="user.email"></p>
+        <div x-show="users.length > 0" class="space-y-2">
+            <template x-for="user in users" :key="user.id">
+                <div class="border p-4 rounded shadow-sm flex justify-between items-center">
+                    <div>
+                        <p><strong x-text="user.name"></strong></p>
+                        <p class="text-sm text-gray-600" x-text="user.email"></p>
+                    </div>
+                    <div class="space-x-2">
+                        <button @click="editUser(user)" class="text-blue-500 hover:underline">Edit</button>
+                        <button @click="deleteUser(user.id)" class="text-red-500 hover:underline">Delete</button>
+                    </div>
                 </div>
-                <div class="space-x-2">
-                    <button @click="editUser(user)" class="text-blue-500 hover:underline">Edit</button>
-                    <button @click="deleteUser(user.id)" class="text-red-500 hover:underline">Delete</button>
+            </template>
+
+            <!-- Pagination -->
+            <div class="mt-4 space-y-2">
+                <div class="text-sm text-gray-600 justify-end">
+                    <span x-text="`Showing ${users.length} of ${pagination.total} entries`"></span>
+                </div>
+
+                <div class="space-x-2 space-y-2">
+                    <button @click="prevPage" :disabled="pagination.current_page === 1"
+                            class="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400"
+                            :class="{'opacity-50 cursor-not-allowed': pagination.current_page === 1}">
+                        Previous
+                    </button>
+
+                    <template x-for="page in pagination.last_page" :key="page">
+                        <button
+                            @click="loadPage(page)"
+                            x-text="page"
+                            :class="{
+                                'bg-blue-500 text-white': page === pagination.current_page,
+                                'bg-gray-200': page !== pagination.current_page
+                            }"
+                            class="px-3 py-1 rounded hover:bg-gray-300"
+                        ></button>
+                    </template>
+
+                    <button @click="nextPage" :disabled="pagination.current_page === pagination.last_page"
+                            class="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400"
+                            :class="{'opacity-50 cursor-not-allowed': pagination.current_page === pagination.last_page}">
+                        Next
+                    </button>
                 </div>
             </div>
-        </template>
+        </div>
         <template x-if="users.length === 0">
             <p class="text-gray-600">No users found.</p>
         </template>
-
-        <!-- Pagination -->
-        <div class="mt-4 space-y-2">
-            <div class="text-sm text-gray-600 justify-end">
-                <span x-text="`Showing ${users.length} of ${pagination.total} entries`"></span>
-            </div>
-
-            <div class="space-x-2 space-y-2">
-                <button @click="prevPage" :disabled="pagination.current_page === 1"
-                        class="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400"
-                        :class="{'opacity-50 cursor-not-allowed': pagination.current_page === 1}">
-                    Previous
-                </button>
-
-                <template x-for="page in pagination.last_page" :key="page">
-                    <button
-                        @click="loadPage(page)"
-                        x-text="page"
-                        :class="{
-                            'bg-blue-500 text-white': page === pagination.current_page,
-                            'bg-gray-200': page !== pagination.current_page
-                        }"
-                        class="px-3 py-1 rounded hover:bg-gray-300"
-                    ></button>
-                </template>
-
-                <button @click="nextPage" :disabled="pagination.current_page === pagination.last_page"
-                        class="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400"
-                        :class="{'opacity-50 cursor-not-allowed': pagination.current_page === pagination.last_page}">
-                    Next
-                </button>
-            </div>
-        </div>
     </div>
 </div>
 </body>
@@ -96,6 +98,7 @@
                 this.isLoading = true;
                 axios.get(`${this.pagination.path}?page=${page}`)
                     .then(response => {
+                        console.log(response.data);
                         this.users = response.data.data;
                         this.pagination.current_page = response.data.current_page;
                         this.pagination.last_page = response.data.last_page;
@@ -154,7 +157,9 @@
                     const response = await axios.post('/users', this.form);
 
                     if (response.data.success) {
-                        this.users.unshift(response.data.user);
+                        // this.users.unshift(response.data.user);
+                        this.loadPage(this.pagination.current_page);
+                        this.pagination.total += 1;
                         this.resetForm();
                         this.$refs.nameInput.focus();
                     }
@@ -226,7 +231,9 @@
                     const response = await axios.delete(`/users/${userId}`);
 
                     if (response.data.success) {
-                        this.users = this.users.filter(u => u.id !== userId);
+                        // this.users = this.users.filter(u => u.id !== userId);
+                        this.loadPage(this.pagination.current_page);
+                        this.pagination.total -= 1;
                         this.isEditing = false;
                     this.resetForm();
                     } else {
