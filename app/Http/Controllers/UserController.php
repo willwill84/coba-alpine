@@ -12,10 +12,12 @@ class UserController extends Controller
      */
     public function index(Request $request)
     {
-        if ($request->ajax() || $request->wantsJson()) {
-            return User::select(['id', 'name', 'email'])->latest()->paginate(5);
+        $perPage = min($request->input('per_page', 5), 100); // maksimal 100 per halaman
+        $query = User::query();
+        $users = $query->select(['id', 'name', 'email'])->latest()->paginate($perPage);
+        if ($request->ajax()) {
+            return $users;
         }
-        $users = User::select(['id', 'name', 'email'])->latest()->paginate(5);
         return view('users', compact('users'));
     }
 
